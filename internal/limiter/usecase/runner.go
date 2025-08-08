@@ -3,7 +3,6 @@ package usecase
 import (
 	"anykey/internal/limiter/domain"
 	"context"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -54,9 +53,4 @@ func RunWithPoolAndRateLimit(ctx context.Context, n int, m int, minInterval time
 	}()
 
 	wg.Wait()
-}
-
-// StdoutOnStart — удобный хук для CLI
-func StdoutOnStart(id int, start time.Time, delta time.Duration) {
-	fmt.Printf("START request %d at %s (Δ=%v)\n", id, start.Format(time.RFC3339Nano), delta)
 }

@@ -14,6 +14,11 @@ func requestCLI(id int) {
 	fmt.Printf("done request %d at %s\n", id, time.Now().Format(time.RFC3339Nano))
 }
 
+// stdoutOnStart — удобный хук для CLI
+func stdoutOnStart(id int, start time.Time, delta time.Duration) {
+	fmt.Printf("START request %d at %s (Δ=%v)\n", id, start.Format(time.RFC3339Nano), delta)
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -24,5 +29,5 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	usecase.RunWithPoolAndRateLimit(ctx, numRequests, numWorkers, minSpacing, requestCLI, usecase.StdoutOnStart)
+	usecase.RunWithPoolAndRateLimit(ctx, numRequests, numWorkers, minSpacing, requestCLI, stdoutOnStart)
 }
