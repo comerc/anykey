@@ -11,10 +11,12 @@ all: jsonf limiter
 jsonf:
 	@echo '== jsonf example =='
 	@printf '%s\n' $(JSONF_EXAMPLE) | go run ./cmd/jsonf name age
+	@echo  
 
 limiter:
 	@echo '== limiter example =='
 	@go run ./cmd/limiter
+	@echo 
 
 test:
 	@GOEXPERIMENT=synctest go test -count=1 ./...
