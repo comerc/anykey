@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,12 +16,7 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 		return fmt.Errorf("no fields specified; pass field names as arguments")
 	}
 
-	keepSet := make(map[string]struct{}, len(keepFields))
-	for _, f := range keepFields {
-		keepSet[f] = struct{}{}
-	}
-
-	// Кэшируем сериализованные имена ключей, чтобы не маршалить на каждом объекте
+	// Кэш сериализованных ключей; также служит множеством для проверки наличия
 	keyBytes := make(map[string][]byte, len(keepFields))
 	for _, f := range keepFields {
 		if _, ok := keyBytes[f]; ok {
@@ -31,6 +27,7 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 	}
 
 	dec := json.NewDecoder(r)
+	bw := bufio.NewWriter(w)
 
 	// Ожидаем начало массива
 	tok, err := dec.Token()
@@ -43,14 +40,14 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 	}
 
 	// Пишем начало массива
-	if _, err := w.Write([]byte{'['}); err != nil {
+	if err := bw.WriteByte('['); err != nil {
 		return err
 	}
 
 	firstElem := true
 	for dec.More() {
 		if !firstElem {
-			if _, err := w.Write([]byte{','}); err != nil {
+			if err := bw.WriteByte(','); err != nil {
 				return err
 			}
 		}
@@ -66,10 +63,11 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 			return fmt.Errorf("expected object start, got %v", tok)
 		}
 
-		if _, err := w.Write([]byte{'{'}); err != nil {
+		if err := bw.WriteByte('{'); err != nil {
 			return err
 		}
 		wrote := false
+		var raw json.RawMessage
 		for dec.More() {
 			// Читаем ключ
 			ktok, err := dec.Token()
@@ -82,24 +80,24 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 			}
 
 			// Читаем значение как "сырой" JSON
-			var raw json.RawMessage
+			raw = raw[:0]
 			if err := dec.Decode(&raw); err != nil {
 				return err
 			}
 
-			if _, keep := keepSet[key]; keep {
+			if kb, keep := keyBytes[key]; keep {
 				if wrote {
-					if _, err := w.Write([]byte{','}); err != nil {
+					if err := bw.WriteByte(','); err != nil {
 						return err
 					}
 				}
-				if _, err := w.Write(keyBytes[key]); err != nil {
+				if _, err := bw.Write(kb); err != nil {
 					return err
 				}
-				if _, err := w.Write([]byte{':'}); err != nil {
+				if err := bw.WriteByte(':'); err != nil {
 					return err
 				}
-				if _, err := w.Write(raw); err != nil {
+				if _, err := bw.Write(raw); err != nil {
 					return err
 				}
 				wrote = true
@@ -115,7 +113,7 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 		if !ok || d != '}' {
 			return fmt.Errorf("expected object end, got %v", tok)
 		}
-		if _, err := w.Write([]byte{'}'}); err != nil {
+		if err := bw.WriteByte('}'); err != nil {
 			return err
 		}
 	}
@@ -129,8 +127,8 @@ func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 	if !ok || delim != ']' {
 		return fmt.Errorf("expected array end, got %v", tok)
 	}
-	if _, err := w.Write([]byte{']'}); err != nil {
+	if err := bw.WriteByte(']'); err != nil {
 		return err
 	}
-	return nil
+	return bw.Flush()
 }
