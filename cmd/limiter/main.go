@@ -1,11 +1,12 @@
 package main
 
 import (
-	"anykey/internal/limiter/usecase"
 	"context"
 	"fmt"
 	"math/rand"
 	"time"
+
+	usecase "anykey/internal/limiter/usecase"
 )
 
 // requestCLI эмулирует внешний запрос, который занимает некоторое время

@@ -1,10 +1,11 @@
 package cli
 
 import (
-	"anykey/internal/jsonf/domain"
 	"bufio"
 	"encoding/json"
 	"io"
+
+	domain "anykey/internal/jsonf/domain"
 )
 
 // WriteObjectsOrdered пишет массив объектов, оставляя только указанные поля и сохраняя их порядок

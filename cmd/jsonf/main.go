@@ -1,11 +1,12 @@
 package main
 
 import (
-	adapter "anykey/internal/jsonf/adapter/cli"
-	"anykey/internal/jsonf/usecase"
 	"fmt"
 	"io"
 	"os"
+
+	adapter "anykey/internal/jsonf/adapter/cli"
+	usecase "anykey/internal/jsonf/usecase"
 )
 
 // никаких прокси и совместимости — только вызовы адаптеров и юзкейсов

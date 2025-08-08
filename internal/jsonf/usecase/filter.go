@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"anykey/internal/jsonf/domain"
+	domain "anykey/internal/jsonf/domain"
 )
 
 // DedupeKeepOrder удаляет дубликаты и сохраняет исходный порядок полей

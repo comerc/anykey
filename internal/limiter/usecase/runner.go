@@ -1,10 +1,11 @@
 package usecase
 
 import (
-	"anykey/internal/limiter/domain"
 	"context"
 	"sync"
 	"time"
+
+	domain "anykey/internal/limiter/domain"
 )
 
 // RunWithPoolAndRateLimit запускает n задач в m воркерах, строго соблюдая интервал между стартапами

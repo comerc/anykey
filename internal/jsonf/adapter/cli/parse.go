@@ -1,9 +1,10 @@
 package cli
 
 import (
-	"anykey/internal/jsonf/domain"
 	"encoding/json"
 	"fmt"
+
+	domain "anykey/internal/jsonf/domain"
 )
 
 func ParseJSONArray(input []byte) ([]domain.Object, error) {
