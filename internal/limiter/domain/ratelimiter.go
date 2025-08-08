@@ -17,10 +17,9 @@ type RateLimiter struct {
 // Возвращает фактическое время старта и дельту до предыдущего старта.
 func (r *RateLimiter) Wait(ctx context.Context) (time.Time, time.Duration, error) {
 	for {
-		select {
-		case <-ctx.Done():
-			return time.Time{}, 0, ctx.Err()
-		default:
+		// Быстрая отмена, если контекст уже завершён
+		if err := ctx.Err(); err != nil {
+			return time.Time{}, 0, err
 		}
 
 		r.Mu.Lock()

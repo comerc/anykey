@@ -1,3 +1,6 @@
+//go:build goexperiment.synctest
+// +build goexperiment.synctest
+
 package domain
 
 import (
