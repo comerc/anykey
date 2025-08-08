@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func TestRunWithPoolAndRateLimit_SyncTime(t *testing.T) {
+func TestRunWithPoolAndRateLimit(t *testing.T) {
 	synctest.Run(func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
