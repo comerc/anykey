@@ -8,7 +8,7 @@ import (
 
 // StreamFilterAndWrite читает из r JSON-массив объектов и записывает
 // отфильтрованный JSON-массив в w, сохраняя исходный порядок полей в каждом объекте.
-// Оставляются только поля, перечисленные в keepFields. Дубликаты имён полей
+// Остаются только поля, перечисленные в keepFields. Дубликаты имён полей
 // в keepFields игнорируются (берётся первое вхождение).
 func StreamFilterAndWrite(r io.Reader, keepFields []string, w io.Writer) error {
 	if len(keepFields) == 0 {
