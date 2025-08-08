@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -8,56 +9,72 @@ import (
 	"os"
 )
 
-// filterJSONArrayFields reads a JSON array of objects and keeps only specified fields
+// dedupeKeepOrder возвращает порядок полей без дубликатов
+func dedupeKeepOrder(keepFields []string) []string {
+	dedup := make([]string, 0, len(keepFields))
+	seen := make(map[string]struct{}, len(keepFields))
+	for _, f := range keepFields {
+		if _, ok := seen[f]; ok {
+			continue
+		}
+		seen[f] = struct{}{}
+		dedup = append(dedup, f)
+	}
+	return dedup
+}
+
+// parseJSONArray парсит вход в массив объектов
+func parseJSONArray(input []byte) ([]map[string]json.RawMessage, error) {
+	var objects []map[string]json.RawMessage
+	if err := json.Unmarshal(input, &objects); err != nil {
+		return nil, fmt.Errorf("input must be a JSON array of objects: %w", err)
+	}
+	return objects, nil
+}
+
+// encodeObjectsOrdered кодирует только указанные поля и сохраняет их порядок
+func writeObjectsOrdered(w io.Writer, objects []map[string]json.RawMessage, keepOrder []string) error {
+	bw := bufio.NewWriter(w)
+	bw.WriteByte('[')
+	for i, obj := range objects {
+		if i > 0 {
+			bw.WriteByte(',')
+		}
+		bw.WriteByte('{')
+		wrote := false
+		for _, field := range keepOrder {
+			if val, ok := obj[field]; ok {
+				if wrote {
+					bw.WriteByte(',')
+				}
+				keyBytes, _ := json.Marshal(field)
+				bw.Write(keyBytes)
+				bw.WriteByte(':')
+				bw.Write(val)
+				wrote = true
+			}
+		}
+		bw.WriteByte('}')
+	}
+	bw.WriteByte(']')
+	return bw.Flush()
+}
+
+// filterJSONArrayFields читает JSON-массив объектов и сохраняет только указанные поля
 func filterJSONArrayFields(input []byte, keepFields []string) ([]byte, error) {
 	if len(keepFields) == 0 {
 		return nil, fmt.Errorf("no fields specified; pass field names as arguments")
 	}
 
-	// Unmarshal into slice of maps with RawMessage to preserve original JSON values
-	var objects []map[string]json.RawMessage
-	if err := json.Unmarshal(input, &objects); err != nil {
-		return nil, fmt.Errorf("input must be a JSON array of objects: %w", err)
+	objects, err := parseJSONArray(input)
+	if err != nil {
+		return nil, err
 	}
-
-	// Build a set for quick lookup and also keep the order of fields as provided
-	keepOrder := make([]string, 0, len(keepFields))
-	keepSet := make(map[string]struct{}, len(keepFields))
-	for _, f := range keepFields {
-		if _, exists := keepSet[f]; exists {
-			continue
-		}
-		keepSet[f] = struct{}{}
-		keepOrder = append(keepOrder, f)
-	}
-
-	// Build output manually to preserve field order as provided in keepOrder
+	keepOrder := dedupeKeepOrder(keepFields)
 	var buf bytes.Buffer
-	buf.WriteByte('[')
-	for i, obj := range objects {
-		if i > 0 {
-			buf.WriteByte(',')
-		}
-		buf.WriteByte('{')
-		wrote := false
-		for _, field := range keepOrder {
-			val, ok := obj[field]
-			if !ok {
-				continue
-			}
-			if wrote {
-				buf.WriteByte(',')
-			}
-			// Write key as proper JSON string
-			keyBytes, _ := json.Marshal(field)
-			buf.Write(keyBytes)
-			buf.WriteByte(':')
-			buf.Write(val)
-			wrote = true
-		}
-		buf.WriteByte('}')
+	if err := writeObjectsOrdered(&buf, objects, keepOrder); err != nil {
+		return nil, err
 	}
-	buf.WriteByte(']')
 	return buf.Bytes(), nil
 }
 
@@ -74,11 +91,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	output, err := filterJSONArrayFields(input, fields)
+	objects, err := parseJSONArray(input)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	os.Stdout.Write(output)
+	keepOrder := dedupeKeepOrder(fields)
+	if err := writeObjectsOrdered(os.Stdout, objects, keepOrder); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }

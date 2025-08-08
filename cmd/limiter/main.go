@@ -8,22 +8,21 @@ import (
 	"time"
 )
 
-// Request emulates an external request that takes some time
+// Request эмулирует внешний запрос, который занимает некоторое время
 func Request(id int) {
 	// Simulate variable latency
 	time.Sleep(time.Duration(50+rand.Intn(150)) * time.Millisecond)
 	fmt.Printf("done request %d at %s\n", id, time.Now().Format(time.RFC3339Nano))
 }
 
-// runWithPoolAndRateLimit runs n requests using m workers and ensures no more than
-// one Request starts within each 200ms window across the whole program.
+// RateLimiter управляет запуском запросов с ограничением на интервал между запросами
 type RateLimiter struct {
 	mu         sync.Mutex
 	lastStart  time.Time
 	minSpacing time.Duration
 }
 
-// Wait blocks until запуск нового запроса не нарушит минимальный интервал.
+// Wait блокируется до тех пор, пока запуск нового запроса не нарушит минимальный интервал.
 // Возвращает фактическое время старта и дельту до предыдущего старта.
 func (r *RateLimiter) Wait(ctx context.Context) (time.Time, time.Duration, error) {
 	for {
@@ -64,6 +63,7 @@ func (r *RateLimiter) Wait(ctx context.Context) (time.Time, time.Duration, error
 	}
 }
 
+// runWithPoolAndRateLimit запускает n запросов с m воркерами и гарантирует, что интервал между запросами не меньше minInterval
 func runWithPoolAndRateLimit(ctx context.Context, n int, m int, minInterval time.Duration) {
 	rl := &RateLimiter{minSpacing: minInterval}
 
