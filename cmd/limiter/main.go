@@ -21,8 +21,6 @@ func stdoutOnStart(id int, start time.Time, delta time.Duration) {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	const numRequests = 10
 	const numWorkers = 3
 	const minSpacing = 200 * time.Millisecond
