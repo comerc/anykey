@@ -2,14 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
-	adapter "anykey/internal/jsonf/adapter/cli"
-	usecase "anykey/internal/jsonf/usecase"
+	adapter "anykey/internal/jsonf/adapter"
 )
-
-// никаких прокси и совместимости — только вызовы адаптеров и юзкейсов
 
 func main() {
 	fields := os.Args[1:]
@@ -18,20 +14,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	input, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "failed to read stdin:", err)
-		os.Exit(1)
-	}
-
-	objects, err := adapter.ParseJSONArray(input)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	keepOrder := usecase.DedupeKeepOrder(fields)
-	filtered := usecase.FilterObjects(objects, keepOrder)
-	if err := adapter.WriteObjectsOrdered(os.Stdout, filtered, keepOrder); err != nil {
+	if err := adapter.StreamFilterAndWrite(os.Stdin, fields, os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
