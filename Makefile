@@ -5,7 +5,7 @@ GO ?= go
 
 JSONF_EXAMPLE := '[{"id":2,"name":"Alice","age":30},{"age":25,"name":"Bob","id":1}]'
 
-.PHONY: all jsonf limiter
+.PHONY: all jsonf limiter test
 
 all: jsonf limiter
 
@@ -16,6 +16,9 @@ jsonf:
 limiter:
 	@echo '== limiter example =='
 	@$(GO) run ./cmd/limiter
+
+test:
+	@$(GO) test -count=1 ./...
 
 
 
