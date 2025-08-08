@@ -18,7 +18,6 @@ limiter:
 	@$(GO) run ./cmd/limiter
 
 test:
-	@$(GO) test -count=1 ./...
-
+	@GOEXPERIMENT=synctest $(GO) test -count=1 ./...
 
 

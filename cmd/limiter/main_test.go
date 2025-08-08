@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -43,4 +44,23 @@ func TestRateLimiter_StrictSpacing(t *testing.T) {
 	if start3.Sub(start2) < 200*time.Millisecond {
 		t.Fatalf("starts should be >= 200ms apart, got %v", start3.Sub(start2))
 	}
+}
+
+func TestRunWithPoolAndRateLimit(t *testing.T) {
+	synctest.Run(func() {
+		// Используем виртуальное время: time.Sleep в Request и Wait
+		// будут мгновенными, но логическое время продвинется на требуемые интервалы
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		start := time.Now()
+		runWithPoolAndRateLimit(ctx, 5, 3, 200*time.Millisecond)
+		elapsed := time.Since(start)
+
+		// Ожидаем как минимум (N-1) интервалов между стартами
+		wantMin := 4 * 200 * time.Millisecond
+		if elapsed < wantMin {
+			t.Fatalf("elapsed too small with synctest: %v < %v", elapsed, wantMin)
+		}
+	})
 }
