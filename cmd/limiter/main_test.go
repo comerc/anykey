@@ -1,6 +1,8 @@
 package main
 
 import (
+	"anykey/internal/limiter/domain"
+	"anykey/internal/limiter/usecase"
 	"context"
 	"testing"
 	"testing/synctest"
@@ -8,7 +10,7 @@ import (
 )
 
 func TestRateLimiter_StrictSpacing(t *testing.T) {
-	rl := &RateLimiter{minSpacing: 200 * time.Millisecond}
+	rl := &domain.RateLimiter{MinSpacing: 200 * time.Millisecond}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -54,7 +56,7 @@ func TestRunWithPoolAndRateLimit(t *testing.T) {
 		defer cancel()
 
 		start := time.Now()
-		runWithPoolAndRateLimit(ctx, 5, 3, 200*time.Millisecond)
+		usecase.RunWithPoolAndRateLimit(ctx, 5, 3, 200*time.Millisecond, func(int) {}, nil)
 		elapsed := time.Since(start)
 
 		// Ожидаем как минимум (N-1) интервалов между стартами

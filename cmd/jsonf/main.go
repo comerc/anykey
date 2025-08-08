@@ -1,7 +1,8 @@
 package main
 
 import (
-	"bufio"
+	adapter "anykey/internal/jsonf/adapter/cli"
+	"anykey/internal/jsonf/usecase"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -10,54 +11,24 @@ import (
 )
 
 // dedupeKeepOrder возвращает порядок полей без дубликатов
-func dedupeKeepOrder(keepFields []string) []string {
-	dedup := make([]string, 0, len(keepFields))
-	seen := make(map[string]struct{}, len(keepFields))
-	for _, f := range keepFields {
-		if _, ok := seen[f]; ok {
-			continue
-		}
-		seen[f] = struct{}{}
-		dedup = append(dedup, f)
-	}
-	return dedup
-}
+// dedupeKeepOrder проксирует usecase для совместимости с существующими тестами
+func dedupeKeepOrder(keepFields []string) []string { return usecase.DedupeKeepOrder(keepFields) }
 
 // parseJSONArray парсит вход в массив объектов
+// parseJSONArray проксирует адаптер для совместимости
 func parseJSONArray(input []byte) ([]map[string]json.RawMessage, error) {
-	var objects []map[string]json.RawMessage
-	if err := json.Unmarshal(input, &objects); err != nil {
-		return nil, fmt.Errorf("input must be a JSON array of objects: %w", err)
+	objs, err := adapter.ParseJSONArray(input)
+	if err != nil {
+		return nil, err
 	}
-	return objects, nil
+	// адаптер возвращает тип domain.Object, совместимый с map[string]json.RawMessage
+	return objs, nil
 }
 
 // encodeObjectsOrdered кодирует только указанные поля и сохраняет их порядок
+// writeObjectsOrdered проксирует адаптер
 func writeObjectsOrdered(w io.Writer, objects []map[string]json.RawMessage, keepOrder []string) error {
-	bw := bufio.NewWriter(w)
-	bw.WriteByte('[')
-	for i, obj := range objects {
-		if i > 0 {
-			bw.WriteByte(',')
-		}
-		bw.WriteByte('{')
-		wrote := false
-		for _, field := range keepOrder {
-			if val, ok := obj[field]; ok {
-				if wrote {
-					bw.WriteByte(',')
-				}
-				keyBytes, _ := json.Marshal(field)
-				bw.Write(keyBytes)
-				bw.WriteByte(':')
-				bw.Write(val)
-				wrote = true
-			}
-		}
-		bw.WriteByte('}')
-	}
-	bw.WriteByte(']')
-	return bw.Flush()
+	return adapter.WriteObjectsOrdered(w, objects, keepOrder)
 }
 
 // filterJSONArrayFields читает JSON-массив объектов и сохраняет только указанные поля
